@@ -68,10 +68,10 @@ main:focus { outline: none; }
 .hero-figure { margin: 0; min-width: 0; position: relative; isolation: isolate; }
 .hero-figure > img { position: absolute; inset: 0; height: 100%; object-position: 50% 54%; }
 .orbits { position: absolute; z-index: 1; inset: 0; background: #1f263014; overflow: hidden; pointer-events: none; }
-.orbits i { position: absolute; width: min(110%,540px); aspect-ratio: 1; right: -22%; top: 50%; translate: 0 -50%; border: 1px solid #fff0d99e; border-radius: 50%; }
-.orbits i:nth-child(2) { scale: .78; }
-.orbits i:nth-child(3) { scale: .56; }
-.orbits i:nth-child(4) { scale: .34; }
+.orbits i { --ring-scale: 1; position: absolute; width: min(110%,540px); aspect-ratio: 1; right: -22%; top: 50%; translate: 0 -50%; scale: var(--ring-scale); border: 1px solid #fff0d99e; border-radius: 50%; }
+.orbits i:nth-child(2) { --ring-scale: .78; }
+.orbits i:nth-child(3) { --ring-scale: .56; }
+.orbits i:nth-child(4) { --ring-scale: .34; }
 .orbits::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #fff0d984; }
 .section { padding-block: 78px; }
 .section + .section { border-top: 1px solid var(--line); }
@@ -229,44 +229,44 @@ dialog p + p, dialog p + button { margin-top: 12px; }
   .facts div + div { border-left: 0; border-top: 1px solid var(--line); }
 }
 
+.stair-glint { display: none; }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .orbits i {
-    translate: var(--orbit-x, 0px) calc(-50% + var(--orbit-y, 0px));
-    transition: translate 320ms ease-out, border-color 320ms ease-out;
-  }
-  .orbits i:nth-child(even) {
-    translate: calc(var(--orbit-x, 0px) * .68) calc(-50% + var(--orbit-y, 0px) * .68);
-  }
-  .orbits::after {
-    translate: 0 var(--orbit-y, 0px);
-    transition: translate 320ms ease-out;
-  }
-  .light-active .orbits i { border-color: #fff0d9c9; }
   .stair-glint {
+    display: block;
     position: absolute;
     z-index: 1;
     left: var(--light-x, 65%);
     top: var(--light-y, 72%);
-    width: 38%;
-    height: 21%;
+    width: 43%;
+    height: min(13%, 68px);
     translate: -50% -50%;
-    rotate: -14deg;
-    opacity: 0;
     pointer-events: none;
     mix-blend-mode: screen;
-    background:
-      radial-gradient(ellipse 45% 9% at 50% 49%, #fff0b9c9, #ebbb5a65 42%, transparent),
-      radial-gradient(ellipse 21% 35% at 51% 49%, #fff2c2ca, #f0bc5e8a 25%, transparent),
-      radial-gradient(ellipse closest-side, #e3b57080, transparent);
-    transition: left 280ms ease-out, top 280ms ease-out, opacity 440ms ease-out;
   }
-  .light-active .stair-glint {
-    opacity: .9;
-    animation: stair-reflection 2.8s ease-in-out infinite alternate;
+  .stair-glint span {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 25%;
+    rotate: -6deg;
+    clip-path: polygon(0 60%, 17% 42%, 31% 51%, 45% 22%, 56% 36%, 72% 12%, 87% 37%, 100% 49%, 86% 56%, 70% 61%, 56% 83%, 43% 73%, 26% 93%, 15% 75%);
+    background: linear-gradient(96deg, transparent 3%, #f0b46b9c 20%, #fff5cae0 37%, #ffe1a140 49%, #f9cf96bb 66%, #fff7d9ed 79%, transparent 98%);
   }
-  @keyframes stair-reflection {
-    from { scale: .82 .86; }
-    to { scale: 1.12 1.07; }
+  .stair-glint span:nth-child(2) {
+    top: 32%;
+    left: 16%;
+    width: 83%;
+    height: 17%;
+    rotate: -4deg;
+    background: linear-gradient(103deg, transparent 6%, #e5a95c66 20%, #ffe8aaba 41%, #fff6dcdf 51%, #ffd3a07d 64%, transparent 92%);
+  }
+  .stair-glint span:nth-child(3) {
+    top: 61%;
+    left: -9%;
+    width: 71%;
+    height: 22%;
+    rotate: -3deg;
+    background: linear-gradient(89deg, transparent 12%, #fad4aa83 28%, #ffffe1df 49%, #edaf715d 70%, transparent 97%);
   }
 }
 </style>
@@ -401,7 +401,7 @@ function home() {
         <p>Ассоциация психологов и психотерапевтов. Пространство профессионального развития, научного поиска и сотрудничества.</p>
         <div class="actions"><a class="button gold" href="#/specialists">Найти специалиста</a><a class="button outline" href="#/join">Вступить в ассоциацию</a></div>
       </div>
-      <figure class="hero-figure"><img src="${images.architecture}" alt="Лестница в современном институте"><div class="stair-glint" aria-hidden="true"></div><div class="orbits" aria-hidden="true"><i></i><i></i><i></i><i></i></div></figure>
+      <figure class="hero-figure"><img src="${images.architecture}" alt="Лестница в современном институте"><div class="stair-glint" aria-hidden="true"><span></span><span></span><span></span></div><div class="orbits" aria-hidden="true"><i></i><i></i><i></i><i></i></div></figure>
     </div>
   </section>
   <section class="section" id="about">
@@ -529,27 +529,71 @@ function focusSection(id) {
 function trackHeroLight() {
   const figure = main.querySelector(".hero-figure");
   const motion = window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)");
+  const rings = [...figure.querySelectorAll(".orbits i")].map((element, index) => ({
+    element, index, scale: Number(getComputedStyle(element).getPropertyValue("--ring-scale")),
+    distance: null, animation: null
+  }));
+  const reflection = figure.querySelector(".stair-glint");
+  const streaks = [...reflection.children];
+  const triggerRadius = 10;
+  let reflections = [];
+
+  function pluck(ring, x, y, width, height) {
+    ring.animation?.cancel();
+    const frames = Array.from({ length: 29 }, (_, index) => {
+      const time = index / 28;
+      const wave = Math.sin(time * 8 * Math.PI) * (1 - time) ** 2;
+      return {
+        transform: `rotate(${wave * 5}deg) scale(${1 + wave * .04}, ${1 - wave * .038})`,
+        borderColor: `rgba(255, 240, 217, ${.62 + Math.abs(wave) * .38})`
+      };
+    });
+    ring.animation = ring.element.animate(frames, { duration: 780 - ring.index * 90 });
+
+    for (const animation of reflections) animation.cancel();
+    reflection.style.setProperty("--light-x", `${49 + x / width * 30}%`);
+    reflection.style.setProperty("--light-y", `${63 + y / height * 17 - x / width * 9}%`);
+
+    const direction = x < width / 2 ? -1 : 1;
+    reflections = streaks.map((streak, index) => {
+      const strength = [1, .72, .5][(index + ring.index) % streaks.length];
+      const sweep = direction * (30 + index * 11);
+      const tint = ring.index * 9 - index * 8;
+      return streak.animate([
+        { opacity: 0, transform: `translateX(${-sweep * .5}px) scaleX(.64)`, filter: `hue-rotate(${tint}deg)` },
+        { opacity: strength, transform: "translateX(0) scaleX(1)", filter: `hue-rotate(${tint + 12}deg)`, offset: .24 },
+        { opacity: strength * .22, transform: `translateX(${sweep * .35}px) scaleX(.88)`, filter: `hue-rotate(${tint - 18}deg)`, offset: .48 },
+        { opacity: strength * .74, transform: `translateX(${sweep * .65}px) scaleX(1.16)`, filter: `hue-rotate(${tint + 21}deg)`, offset: .67 },
+        { opacity: 0, transform: `translateX(${sweep}px) scaleX(.86)`, filter: `hue-rotate(${tint}deg)` }
+      ], { duration: 700 + index * 120, delay: ((index + ring.index) % streaks.length) * 65 });
+    });
+  }
 
   figure.addEventListener("pointermove", event => {
     if (!motion.matches || event.pointerType === "touch") return;
     const bounds = figure.getBoundingClientRect();
-    const x = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
-    const y = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    let nearest = null;
 
-    figure.style.setProperty("--orbit-x", `${(x - .5) * 64}px`);
-    figure.style.setProperty("--orbit-y", `${(y - .5) * 56}px`);
-    figure.style.setProperty("--light-x", `${48 + x * 35}%`);
-    figure.style.setProperty("--light-y", `${66 + y * 19 - x * 10}%`);
-    figure.classList.add("light-active");
+    for (const ring of rings) {
+      const radius = ring.element.offsetWidth / 2;
+      const distance = Math.hypot(x - ring.element.offsetLeft - radius, y - ring.element.offsetTop) - radius * ring.scale;
+      const wasAway = ring.distance === null || Math.abs(ring.distance) > triggerRadius;
+      const crossed = ring.distance !== null && distance * ring.distance < 0;
+      if (wasAway && (Math.abs(distance) <= triggerRadius || crossed)) {
+        if (!nearest || Math.abs(distance) < Math.abs(nearest.distance)) nearest = ring;
+      }
+      ring.distance = distance;
+    }
+    if (nearest) pluck(nearest, x, y, bounds.width, bounds.height);
   });
 
-  const clearLight = () => {
-    figure.classList.remove("light-active");
-    figure.style.removeProperty("--orbit-x");
-    figure.style.removeProperty("--orbit-y");
-  };
-  figure.addEventListener("pointerleave", clearLight);
-  figure.addEventListener("pointercancel", clearLight);
+  function resetDistances() {
+    for (const ring of rings) ring.distance = null;
+  }
+  figure.addEventListener("pointerleave", resetDistances);
+  figure.addEventListener("pointercancel", resetDistances);
 }
 
 function render(moveFocus = true) {
