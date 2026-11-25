@@ -1,5 +1,298 @@
 "use strict";
 
+const practices = [
+  { id: "check-in", title: "Как я сейчас?", duration: "1 мин", kind: "Самопроверка", description: "Пять вопросов про энергию, напряжение и внимание. Итог подскажет, чему дать место сегодня.", run: runCheckIn },
+  { id: "memory", title: "Запомните порядок", duration: "1–2 мин", kind: "Игра", description: "Посмотрите, как загораются клетки, и нажмите на них в той же последовательности.", run: runMemory },
+  { id: "priorities", title: "С чего начать?", duration: "2 мин", kind: "Инструмент", description: "Соберите свои задачи и перетащите самую важную наверх.", run: runPriorities }
+];
+
+function practiceSection() {
+  return `<section class="section practice-section" id="practice" aria-labelledby="practice-title"><div class="wrap practice-layout">
+    <div class="practice-intro"><h2 id="practice-title">Практикум</h2><p>Короткие игры и упражнения, чтобы переключиться, заметить своё состояние и выбрать следующий шаг.</p></div>
+    <div class="practice-options">${practices.map(item => `<button class="practice-option" type="button" data-practice="${item.id}">
+      <span class="practice-option-copy"><span class="practice-kind">${item.kind}</span><strong>${item.title}</strong><span class="practice-description">${item.description}</span></span>
+      <span class="practice-duration">${item.duration}</span>
+    </button>`).join("")}</div>
+  </div></section>`;
+}
+
+function openPractice(id) {
+  const item = practices.find(practice => practice.id === id);
+  if (!item) return;
+  const controller = new AbortController();
+  dialog.classList.remove("material-editor");
+  dialog.classList.add("practice-dialog");
+  dialog.querySelector("h2").textContent = item.title;
+  const body = dialog.querySelector("#dialog-body");
+  dialog.addEventListener("close", () => {
+    controller.abort();
+    dialog.classList.remove("practice-dialog");
+  }, { once: true });
+  dialog.showModal();
+  item.run(body, controller.signal);
+}
+
+const checkInQuestions = [
+  { name: "Энергия", title: "Сколько у вас сейчас сил для обычных дел?",
+    options: ["Сил достаточно", "Сил меньше, чем обычно", "Даже простые дела требуют усилий"],
+    idea: "Выберите одно дело, которое можно упростить или отложить." },
+  { name: "Напряжение", title: "Замечаете ли вы напряжение в теле прямо сейчас?",
+    options: ["Почти нет", "Замечаю в отдельных местах", "Трудно расслабиться"],
+    idea: "Сделайте короткую паузу и проверьте, удобно ли вам сидеть или стоять." },
+  { name: "Внимание", title: "Как сейчас получается удерживать внимание на одном деле?",
+    options: ["Получается без усилий", "Иногда отвлекаюсь", "Трудно оставаться на одной задаче"],
+    idea: "Выберите одну небольшую задачу и уберите на несколько минут одно отвлечение." },
+  { name: "Темп дня", title: "Есть ли у вас пространство между делами?",
+    options: ["Да, могу делать паузы", "Иногда приходится спешить", "Дела идут сплошным потоком"],
+    idea: "Посмотрите, где в расписании можно оставить небольшой промежуток между делами." },
+  { name: "Восстановление", title: "Удалось ли сегодня уделить время чему-то, что помогает восстановиться?",
+    options: ["Да, получилось", "Немного", "Пока совсем не получилось"],
+    idea: "Вспомните одно занятие, после которого вам обычно легче, и выделите для него время." }
+];
+
+function runCheckIn(body, signal) {
+  const answers = [];
+  let step = 0;
+
+  function draw(focus = false) {
+    const question = checkInQuestions[step];
+    if (question) {
+      const chosen = answers[step];
+      body.innerHTML = `<p class="practice-progress">Вопрос ${step + 1} из ${checkInQuestions.length}</p>
+        <progress value="${step + 1}" max="${checkInQuestions.length}" aria-label="Ход самопроверки"></progress>
+        <h3 class="practice-question" tabindex="-1">${question.title}</h3>
+        <div class="check-answers" role="group" aria-label="Варианты ответа">${question.options.map((option, index) =>
+          `<button type="button" data-answer="${index}" aria-pressed="${chosen === index}">${option}</button>`).join("")}</div>
+        <div class="actions">${step ? '<button class="text-button" type="button" data-check-back>Предыдущий вопрос</button>' : ""}</div>
+        <small class="practice-note">Упражнение для самонаблюдения. Ответы остаются в этом окне.</small>`;
+    } else {
+      const points = checkInQuestions.map((item, index) => ({ ...item, level: answers[index] }))
+        .filter(item => item.level > 0).sort((a, b) => b.level - a.level).slice(0, 2);
+      body.innerHTML = `<h3 class="practice-question" tabindex="-1">${points.length ? "На что обратить внимание сегодня" : "Что сейчас вас поддерживает"}</h3>
+        ${points.length ? `<p>По вашим ответам можно начать с одной из этих областей.</p>
+          <ul class="check-results">${points.map(item => `<li><strong>${item.name}</strong><p>${item.idea}</p></li>`).join("")}</ul>`
+          : '<p>В ответах вы отметили, что вам хватает сил и внимания, а в расписании есть место для пауз. Подумайте, что сегодня помогло сохранить этот ритм.</p>'}
+        <small class="practice-note">Это подсказка для самонаблюдения, а не диагностика.</small>
+        <div class="actions"><button class="button outline" type="button" data-check-restart>Пройти ещё раз</button></div>`;
+    }
+    if (focus) body.querySelector(".practice-question").focus();
+  }
+
+  body.addEventListener("click", event => {
+    const answer = event.target.closest("[data-answer]");
+    if (answer) {
+      answers[step] = Number(answer.dataset.answer);
+      step += 1;
+    } else if (event.target.closest("[data-check-back]")) {
+      step -= 1;
+    } else if (event.target.closest("[data-check-restart]")) {
+      step = 0;
+      answers.length = 0;
+    } else return;
+    draw(true);
+  }, { signal });
+  draw();
+}
+
+function memorySequence(size) {
+  const cells = Array.from({ length: 9 }, (_, index) => index);
+  for (let i = 0; i < size; i += 1) {
+    const next = i + Math.floor(Math.random() * (cells.length - i));
+    [cells[i], cells[next]] = [cells[next], cells[i]];
+  }
+  return cells.slice(0, size);
+}
+
+function runMemory(body, signal) {
+  let length = 3;
+  let sequence = [];
+  let matched = 0;
+  let phase = "ready";
+  let timer;
+  body.innerHTML = `<p>Запомните порядок подсветки, затем нажмите на те же клетки. Начнём с трёх.</p>
+    <div class="memory-grid" role="group" aria-label="Девять игровых клеток">${Array.from({ length: 9 }, (_, index) =>
+      `<button type="button" data-cell="${index}" aria-label="Клетка ${index + 1}" disabled>${index + 1}</button>`).join("")}</div>
+    <p class="memory-status" role="status">Когда будете готовы, начните раунд.</p>
+    <button class="button dark" data-memory-start type="button">Начать раунд</button>`;
+  const cells = [...body.querySelectorAll("[data-cell]")];
+  const status = body.querySelector(".memory-status");
+  const start = body.querySelector("[data-memory-start]");
+  signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+
+  function beginRound() {
+    phase = "showing";
+    sequence = memorySequence(length);
+    matched = 0;
+    start.hidden = true;
+    for (const cell of cells) {
+      cell.disabled = true;
+      cell.className = "";
+    }
+    status.textContent = "Запоминайте порядок.";
+    status.setAttribute("tabindex", "-1");
+    status.focus();
+
+    function flash(index) {
+      if (index === sequence.length) {
+        phase = "recall";
+        status.textContent = "Теперь повторите порядок.";
+        for (const cell of cells) cell.disabled = false;
+        cells[0].focus();
+        return;
+      }
+      const cell = cells[sequence[index]];
+      cell.classList.add("is-lit");
+      status.textContent = `Сигнал ${index + 1} из ${length} · клетка ${sequence[index] + 1}`;
+      timer = setTimeout(() => {
+        cell.classList.remove("is-lit");
+        timer = setTimeout(() => flash(index + 1), 225);
+      }, 650);
+    }
+
+    timer = setTimeout(() => flash(0), 450);
+  }
+
+  start.addEventListener("click", beginRound, { signal });
+  for (const cell of cells) cell.addEventListener("click", () => {
+    if (phase !== "recall") return;
+    const correct = Number(cell.dataset.cell) === sequence[matched];
+    if (correct) {
+      matched += 1;
+      cell.classList.add("is-matched");
+      cell.disabled = true;
+      if (matched < length) {
+        status.textContent = `Верно · ${matched} из ${length}`;
+        cells.find(candidate => !candidate.disabled).focus();
+        return;
+      }
+    }
+
+    phase = "ready";
+    for (const button of cells) button.disabled = true;
+    start.hidden = false;
+    if (!correct) {
+      cell.classList.add("is-missed");
+      status.textContent = `Совпало ${matched} из ${length}. Можно попробовать новую последовательность той же длины.`;
+      start.textContent = "Попробовать ещё раз";
+    } else if (length < 6) {
+      length += 1;
+      status.textContent = `Последовательность верная. В следующем раунде клеток будет ${length}.`;
+      start.textContent = "Следующий раунд";
+    } else {
+      length = 3;
+      status.textContent = "Получилось повторить последовательность из шести клеток!";
+      start.textContent = "Сыграть снова";
+    }
+    start.focus();
+  }, { signal });
+}
+
+function runPriorities(body, signal) {
+  const tasks = [];
+  let drag;
+  body.innerHTML = `<p>Добавьте до шести дел. Переместите важное наверх и выберите, с чего начать.</p>
+    <form class="priority-form">
+      <label for="priority-input">Ваша задача</label>
+      <div><input id="priority-input" name="task" maxlength="75" required autocomplete="off" placeholder="Например, подготовить письмо"><button class="button dark" type="submit">Добавить</button></div>
+    </form>
+    <button class="text-button" data-priority-example type="button">Попробовать на примере</button>
+    <ol class="priority-list" aria-label="Задачи по порядку"></ol>
+    <div class="priority-next" role="status"></div>
+    <small class="practice-note">Для сортировки потяните за ручку или нажмите «Выше» и «Ниже». Список остаётся в этом окне.</small>`;
+  const form = body.querySelector(".priority-form");
+  const input = form.elements.task;
+  const list = body.querySelector(".priority-list");
+  const next = body.querySelector(".priority-next");
+  const example = body.querySelector("[data-priority-example]");
+
+  function draw(focusIndex = null, control = "up") {
+    list.innerHTML = tasks.map((task, index) => `<li class="priority-row" data-priority-row="${index}">
+      <span class="priority-handle" data-priority-handle aria-hidden="true">⠿</span><span class="priority-text">${escapeHtml(task)}</span>
+      <span class="priority-actions">
+        <button type="button" data-priority-control="up" aria-label="Выше · ${escapeHtml(task)}" ${index === 0 ? "disabled" : ""}>Выше</button>
+        <button type="button" data-priority-control="down" aria-label="Ниже · ${escapeHtml(task)}" ${index === tasks.length - 1 ? "disabled" : ""}>Ниже</button>
+        <button type="button" data-priority-control="remove" aria-label="Убрать · ${escapeHtml(task)}">Убрать</button>
+      </span>
+    </li>`).join("");
+    example.hidden = tasks.length > 0;
+    input.disabled = tasks.length >= 6;
+    form.querySelector('button[type="submit"]').disabled = input.disabled;
+    next.textContent = tasks.length ? "Начните с задачи «" + tasks[0] + "»." : "";
+    next.hidden = !tasks.length;
+    if (focusIndex === null) return;
+    const row = list.children[focusIndex];
+    (row?.querySelector('[data-priority-control="' + control + '"]:enabled')
+      ?? row?.querySelector("[data-priority-control]:enabled")
+      ?? input).focus();
+  }
+
+  function move(from, to) {
+    if (from === to || to < 0 || to >= tasks.length) return;
+    const [task] = tasks.splice(from, 1);
+    tasks.splice(to, 0, task);
+  }
+
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    const task = input.value.trim();
+    if (!task || tasks.length >= 6) return;
+    tasks.push(task);
+    input.value = "";
+    draw();
+    if (input.disabled) list.lastElementChild.querySelector("button:enabled").focus();
+    else input.focus();
+  }, { signal });
+  example.addEventListener("click", () => {
+    tasks.push("Ответить на письмо", "Подготовить первый слайд", "Выбрать время для прогулки");
+    draw(0, "down");
+  }, { signal });
+  list.addEventListener("click", event => {
+    const button = event.target.closest("[data-priority-control]");
+    if (!button) return;
+    const index = Number(button.closest(".priority-row").dataset.priorityRow);
+    const control = button.dataset.priorityControl;
+    if (control === "remove") {
+      tasks.splice(index, 1);
+      draw(Math.min(index, tasks.length - 1), "remove");
+    } else {
+      const target = index + (control === "up" ? -1 : 1);
+      move(index, target);
+      draw(target, control);
+    }
+  }, { signal });
+
+  list.addEventListener("pointerdown", event => {
+    const handle = event.target.closest("[data-priority-handle]");
+    if (!handle || event.button !== 0) return;
+    const row = handle.closest(".priority-row");
+    const index = Number(row.dataset.priorityRow);
+    drag = { pointer: event.pointerId, from: index, to: index };
+    row.classList.add("is-moving");
+    handle.setPointerCapture(event.pointerId);
+  }, { signal });
+  list.addEventListener("pointermove", event => {
+    if (drag?.pointer !== event.pointerId) return;
+    const row = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-priority-row]");
+    if (!row || !list.contains(row)) return;
+    list.children[drag.to]?.classList.remove("drop-target");
+    drag.to = Number(row.dataset.priorityRow);
+    if (drag.to !== drag.from) row.classList.add("drop-target");
+  }, { signal });
+  function finishDrag(event) {
+    if (drag?.pointer !== event.pointerId) return;
+    const { from, to } = drag;
+    drag = null;
+    if (event.type === "pointerup") move(from, to);
+    draw();
+  }
+  list.addEventListener("pointerup", finishDrag, { signal });
+  list.addEventListener("pointercancel", finishDrag, { signal });
+  list.addEventListener("lostpointercapture", finishDrag, { signal });
+  draw();
+}
+
+"use strict";
+
 const people = [
   {
     id: "alexander-morozov", name: "Александр Морозов", role: "Психолог", city: "Москва", modes: ["Очно", "Онлайн"],
@@ -106,6 +399,7 @@ function home() {
       <div class="facts"><div><strong>2024</strong><span>Год основания</span></div><div><strong>Москва</strong><span>Место регистрации</span></div><div><strong>НКО</strong><span>Профессиональное объединение</span></div></div>
     </div>
   </section>
+  ${practiceSection()}
   <section class="section tinted" id="projects"><div class="wrap">
     <div class="section-head"><h2>Направления деятельности</h2></div>
     <div class="directions">${directions.map(([title, body]) => `<article><h3>${title}</h3><p>${body}</p></article>`).join("")}</div>
@@ -289,7 +583,7 @@ function render(moveFocus = true) {
   const params = new URLSearchParams(query);
   const match = path.match(/^\/specialists\/([a-z-]+)(?:\/materials\/([a-z0-9-]+))?$/);
   const catalogPage = path === "/specialists";
-  const homeSections = ["about", "projects", "events", "join", "documents", "contacts"];
+  const homeSections = ["about", "practice", "projects", "events", "join", "documents", "contacts"];
   const homeSection = homeSections.find(section => path === "/" + section);
   selectedPerson = match ? people.find(person => person.id === match[1]) : undefined;
   selectedMaterial = match?.[2] && selectedPerson
@@ -343,7 +637,7 @@ function render(moveFocus = true) {
 }
 
 const messages = {
-  privacy: ["Конфиденциальность", "Фильтры работают в браузере. На сайте нет форм сбора персональных данных."],
+  privacy: ["Конфиденциальность", "Ответы и задачи из практикума остаются в открытом окне. Фильтры каталога работают в браузере."],
   join: ["Вступление в АСПП", "В рабочей версии здесь появятся условия членства, список документов и способ подачи заявки."],
   booking: ["Запись на консультацию", "В рабочей версии здесь будет способ согласовать время со специалистом. Демонстрационная запись не отправляется."],
   course: ["Покупка курса", "Это демонстрационный курс. Оплата и выдача доступа не подключены."],
@@ -376,6 +670,8 @@ if (inBrowser) {
   });
   document.addEventListener("click", event => {
     handleMaterialsClick(event.target);
+    const practice = event.target.closest("[data-practice]");
+    if (practice) openPractice(practice.dataset.practice);
     const action = event.target.closest("[data-dialog]");
     if (action) showDialog(action.dataset.dialog);
     if (event.target.closest("[data-reset]")) {
