@@ -228,47 +228,6 @@ dialog p + p, dialog p + button { margin-top: 12px; }
   .facts div, .facts div:first-child { padding-inline: 0; }
   .facts div + div { border-left: 0; border-top: 1px solid var(--line); }
 }
-
-.stair-glint { display: none; }
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .stair-glint {
-    display: block;
-    position: absolute;
-    z-index: 1;
-    left: var(--light-x, 65%);
-    top: var(--light-y, 72%);
-    width: 43%;
-    height: min(13%, 68px);
-    translate: -50% -50%;
-    pointer-events: none;
-    mix-blend-mode: screen;
-  }
-  .stair-glint span {
-    position: absolute;
-    opacity: 0;
-    width: 100%;
-    height: 25%;
-    rotate: -6deg;
-    clip-path: polygon(0 60%, 17% 42%, 31% 51%, 45% 22%, 56% 36%, 72% 12%, 87% 37%, 100% 49%, 86% 56%, 70% 61%, 56% 83%, 43% 73%, 26% 93%, 15% 75%);
-    background: linear-gradient(96deg, transparent 3%, #f0b46b9c 20%, #fff5cae0 37%, #ffe1a140 49%, #f9cf96bb 66%, #fff7d9ed 79%, transparent 98%);
-  }
-  .stair-glint span:nth-child(2) {
-    top: 32%;
-    left: 16%;
-    width: 83%;
-    height: 17%;
-    rotate: -4deg;
-    background: linear-gradient(103deg, transparent 6%, #e5a95c66 20%, #ffe8aaba 41%, #fff6dcdf 51%, #ffd3a07d 64%, transparent 92%);
-  }
-  .stair-glint span:nth-child(3) {
-    top: 61%;
-    left: -9%;
-    width: 71%;
-    height: 22%;
-    rotate: -3deg;
-    background: linear-gradient(89deg, transparent 12%, #fad4aa83 28%, #ffffe1df 49%, #edaf715d 70%, transparent 97%);
-  }
-}
 </style>
 </head>
 <body>
@@ -401,7 +360,7 @@ function home() {
         <p>Ассоциация психологов и психотерапевтов. Пространство профессионального развития, научного поиска и сотрудничества.</p>
         <div class="actions"><a class="button gold" href="#/specialists">Найти специалиста</a><a class="button outline" href="#/join">Вступить в ассоциацию</a></div>
       </div>
-      <figure class="hero-figure"><img src="${images.architecture}" alt="Лестница в современном институте"><div class="stair-glint" aria-hidden="true"><span></span><span></span><span></span></div><div class="orbits" aria-hidden="true"><i></i><i></i><i></i><i></i></div></figure>
+      <figure class="hero-figure"><img src="${images.architecture}" alt="Лестница в современном институте"><div class="orbits" aria-hidden="true"><i></i><i></i><i></i><i></i></div></figure>
     </div>
   </section>
   <section class="section" id="about">
@@ -533,12 +492,9 @@ function trackHeroLight() {
     element, index, scale: Number(getComputedStyle(element).getPropertyValue("--ring-scale")),
     distance: null, animation: null
   }));
-  const reflection = figure.querySelector(".stair-glint");
-  const streaks = [...reflection.children];
   const triggerRadius = 10;
-  let reflections = [];
 
-  function pluck(ring, x, y, width, height) {
+  function pluck(ring) {
     ring.animation?.cancel();
     const frames = Array.from({ length: 29 }, (_, index) => {
       const time = index / 28;
@@ -549,24 +505,6 @@ function trackHeroLight() {
       };
     });
     ring.animation = ring.element.animate(frames, { duration: 780 - ring.index * 90 });
-
-    for (const animation of reflections) animation.cancel();
-    reflection.style.setProperty("--light-x", `${49 + x / width * 30}%`);
-    reflection.style.setProperty("--light-y", `${63 + y / height * 17 - x / width * 9}%`);
-
-    const direction = x < width / 2 ? -1 : 1;
-    reflections = streaks.map((streak, index) => {
-      const strength = [1, .72, .5][(index + ring.index) % streaks.length];
-      const sweep = direction * (30 + index * 11);
-      const tint = ring.index * 9 - index * 8;
-      return streak.animate([
-        { opacity: 0, transform: `translateX(${-sweep * .5}px) scaleX(.64)`, filter: `hue-rotate(${tint}deg)` },
-        { opacity: strength, transform: "translateX(0) scaleX(1)", filter: `hue-rotate(${tint + 12}deg)`, offset: .24 },
-        { opacity: strength * .22, transform: `translateX(${sweep * .35}px) scaleX(.88)`, filter: `hue-rotate(${tint - 18}deg)`, offset: .48 },
-        { opacity: strength * .74, transform: `translateX(${sweep * .65}px) scaleX(1.16)`, filter: `hue-rotate(${tint + 21}deg)`, offset: .67 },
-        { opacity: 0, transform: `translateX(${sweep}px) scaleX(.86)`, filter: `hue-rotate(${tint}deg)` }
-      ], { duration: 700 + index * 120, delay: ((index + ring.index) % streaks.length) * 65 });
-    });
   }
 
   figure.addEventListener("pointermove", event => {
@@ -586,7 +524,7 @@ function trackHeroLight() {
       }
       ring.distance = distance;
     }
-    if (nearest) pluck(nearest, x, y, bounds.width, bounds.height);
+    if (nearest) pluck(nearest);
   });
 
   function resetDistances() {
