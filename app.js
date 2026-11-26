@@ -494,8 +494,11 @@ function focusSection(id) {
   section.scrollIntoView();
 }
 
-function trackHeroLight() {
-  const figure = main.querySelector(".hero-figure");
+const initializedHeroFigures = new WeakSet();
+
+function initializeHeroRings(figure) {
+  if (!figure || initializedHeroFigures.has(figure)) return;
+  initializedHeroFigures.add(figure);
   const motion = window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)");
   const rings = [...figure.querySelectorAll(".orbits i")].map((element, index) => ({
     element, index, scale: Number(getComputedStyle(element).getPropertyValue("--ring-scale")),
@@ -587,10 +590,8 @@ function render(moveFocus = true) {
     renderResults(false);
     document.title = "Каталог специалистов — АСПП";
   } else if (path === "/" || homeSection) {
-    if (!main.querySelector(".hero")) {
-      main.innerHTML = home();
-      trackHeroLight();
-    }
+    if (!main.querySelector(".hero")) main.innerHTML = home();
+    initializeHeroRings(main.querySelector(".hero-figure"));
     document.title = "АСПП — Ассоциация психологов и психотерапевтов";
   } else {
     main.innerHTML = `<div class="wrap section"><h1>Страница не найдена</h1><div class="actions"><a class="button dark" href="${pageUrl("/specialists")}">К каталогу специалистов</a></div></div>`;
