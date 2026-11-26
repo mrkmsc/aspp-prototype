@@ -1,19 +1,22 @@
 "use strict";
 
 const practices = [
-  { id: "check-in", title: "Как я сейчас?", duration: "1 мин", kind: "Самопроверка", description: "Пять вопросов про энергию, напряжение и внимание. Итог подскажет, чему дать место сегодня.", run: runCheckIn },
-  { id: "memory", title: "Запомните порядок", duration: "1–2 мин", kind: "Игра", description: "Посмотрите, как загораются клетки, и нажмите на них в той же последовательности.", run: runMemory },
-  { id: "priorities", title: "С чего начать?", duration: "2 мин", kind: "Инструмент", description: "Соберите свои задачи и перетащите самую важную наверх.", run: runPriorities }
+  { id: "memory", kind: "Память", title: "Запомните порядок", description: "Повторите последовательность подсвеченных клеток.", run: runMemory },
+  { id: "attention", kind: "Внимание", title: "Найдите лишнюю", description: "Найдите стрелку, которая смотрит в другую сторону.", run: runAttention },
+  { id: "thinking", kind: "Мышление", title: "Поймайте закономерность", description: "Разгадайте правило и выберите, что будет дальше.", run: runThinking }
 ];
 
 function practiceSection() {
-  return `<section class="section practice-section" id="practice" aria-labelledby="practice-title"><div class="wrap practice-layout">
-    <div class="practice-intro"><h2 id="practice-title">Практикум</h2><p>Короткие игры и упражнения, чтобы переключиться, заметить своё состояние и выбрать следующий шаг.</p></div>
-    <div class="practice-options">${practices.map(item => `<button class="practice-option" type="button" data-practice="${item.id}">
-      <span class="practice-option-copy"><span class="practice-kind">${item.kind}</span><strong>${item.title}</strong><span class="practice-description">${item.description}</span></span>
-      <span class="practice-duration">${item.duration}</span>
-    </button>`).join("")}</div>
-  </div></section>`;
+  return `<section class="section practice-section" id="practice" aria-labelledby="practice-title">
+    <div class="wrap">
+      <div class="practice-intro"><h2 id="practice-title">Практикум</h2><p>Три короткие игры на память, внимание и мышление.</p></div>
+      <div class="practice-options">${practices.map(item => `<button class="practice-option" type="button" data-practice="${item.id}" aria-label="${item.kind} · ${item.title}">
+        <span class="practice-icon practice-icon--${item.id}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="practice-kind">${item.kind}</span>
+        <strong>${item.title}</strong><span class="practice-description">${item.description}</span>
+      </button>`).join("")}</div>
+    </div>
+  </section>`;
 }
 
 function openPractice(id) {
@@ -28,74 +31,12 @@ function openPractice(id) {
     controller.abort();
     dialog.classList.remove("practice-dialog");
   }, { once: true });
-  dialog.showModal();
   item.run(body, controller.signal);
+  dialog.showModal();
 }
 
-const checkInQuestions = [
-  { name: "Энергия", title: "Сколько у вас сейчас сил для обычных дел?",
-    options: ["Сил достаточно", "Сил меньше, чем обычно", "Даже простые дела требуют усилий"],
-    idea: "Выберите одно дело, которое можно упростить или отложить." },
-  { name: "Напряжение", title: "Замечаете ли вы напряжение в теле прямо сейчас?",
-    options: ["Почти нет", "Замечаю в отдельных местах", "Трудно расслабиться"],
-    idea: "Сделайте короткую паузу и проверьте, удобно ли вам сидеть или стоять." },
-  { name: "Внимание", title: "Как сейчас получается удерживать внимание на одном деле?",
-    options: ["Получается без усилий", "Иногда отвлекаюсь", "Трудно оставаться на одной задаче"],
-    idea: "Выберите одну небольшую задачу и уберите на несколько минут одно отвлечение." },
-  { name: "Темп дня", title: "Есть ли у вас пространство между делами?",
-    options: ["Да, могу делать паузы", "Иногда приходится спешить", "Дела идут сплошным потоком"],
-    idea: "Посмотрите, где в расписании можно оставить небольшой промежуток между делами." },
-  { name: "Восстановление", title: "Удалось ли сегодня уделить время чему-то, что помогает восстановиться?",
-    options: ["Да, получилось", "Немного", "Пока совсем не получилось"],
-    idea: "Вспомните одно занятие, после которого вам обычно легче, и выделите для него время." }
-];
-
-function runCheckIn(body, signal) {
-  const answers = [];
-  let step = 0;
-
-  function draw(focus = false) {
-    const question = checkInQuestions[step];
-    if (question) {
-      const chosen = answers[step];
-      body.innerHTML = `<p class="practice-progress">Вопрос ${step + 1} из ${checkInQuestions.length}</p>
-        <progress value="${step + 1}" max="${checkInQuestions.length}" aria-label="Ход самопроверки"></progress>
-        <h3 class="practice-question" tabindex="-1">${question.title}</h3>
-        <div class="check-answers" role="group" aria-label="Варианты ответа">${question.options.map((option, index) =>
-          `<button type="button" data-answer="${index}" aria-pressed="${chosen === index}">${option}</button>`).join("")}</div>
-        <div class="actions">${step ? '<button class="text-button" type="button" data-check-back>Предыдущий вопрос</button>' : ""}</div>
-        <small class="practice-note">Упражнение для самонаблюдения. Ответы остаются в этом окне.</small>`;
-    } else {
-      const points = checkInQuestions.map((item, index) => ({ ...item, level: answers[index] }))
-        .filter(item => item.level > 0).sort((a, b) => b.level - a.level).slice(0, 2);
-      body.innerHTML = `<h3 class="practice-question" tabindex="-1">${points.length ? "На что обратить внимание сегодня" : "Что сейчас вас поддерживает"}</h3>
-        ${points.length ? `<p>По вашим ответам можно начать с одной из этих областей.</p>
-          <ul class="check-results">${points.map(item => `<li><strong>${item.name}</strong><p>${item.idea}</p></li>`).join("")}</ul>`
-          : '<p>В ответах вы отметили, что вам хватает сил и внимания, а в расписании есть место для пауз. Подумайте, что сегодня помогло сохранить этот ритм.</p>'}
-        <small class="practice-note">Это подсказка для самонаблюдения, а не диагностика.</small>
-        <div class="actions"><button class="button outline" type="button" data-check-restart>Пройти ещё раз</button></div>`;
-    }
-    if (focus) body.querySelector(".practice-question").focus();
-  }
-
-  body.addEventListener("click", event => {
-    const answer = event.target.closest("[data-answer]");
-    if (answer) {
-      answers[step] = Number(answer.dataset.answer);
-      step += 1;
-    } else if (event.target.closest("[data-check-back]")) {
-      step -= 1;
-    } else if (event.target.closest("[data-check-restart]")) {
-      step = 0;
-      answers.length = 0;
-    } else return;
-    draw(true);
-  }, { signal });
-  draw();
-}
-
-function memorySequence(size) {
-  const cells = Array.from({ length: 9 }, (_, index) => index);
+function randomOrder(size, total) {
+  const cells = Array.from({ length: total }, (_, index) => index);
   for (let i = 0; i < size; i += 1) {
     const next = i + Math.floor(Math.random() * (cells.length - i));
     [cells[i], cells[next]] = [cells[next], cells[i]];
@@ -121,7 +62,7 @@ function runMemory(body, signal) {
 
   function beginRound() {
     phase = "showing";
-    sequence = memorySequence(length);
+    sequence = randomOrder(length, 9);
     matched = 0;
     start.hidden = true;
     for (const cell of cells) {
@@ -187,107 +128,135 @@ function runMemory(body, signal) {
   }, { signal });
 }
 
-function runPriorities(body, signal) {
-  const tasks = [];
-  let drag;
-  body.innerHTML = `<p>Добавьте до шести дел. Переместите важное наверх и выберите, с чего начать.</p>
-    <form class="priority-form">
-      <label for="priority-input">Ваша задача</label>
-      <div><input id="priority-input" name="task" maxlength="75" required autocomplete="off" placeholder="Например, подготовить письмо"><button class="button dark" type="submit">Добавить</button></div>
-    </form>
-    <button class="text-button" data-priority-example type="button">Попробовать на примере</button>
-    <ol class="priority-list" aria-label="Задачи по порядку"></ol>
-    <div class="priority-next" role="status"></div>
-    <small class="practice-note">Для сортировки потяните за ручку или нажмите «Выше» и «Ниже». Список остаётся в этом окне.</small>`;
-  const form = body.querySelector(".priority-form");
-  const input = form.elements.task;
-  const list = body.querySelector(".priority-list");
-  const next = body.querySelector(".priority-next");
-  const example = body.querySelector("[data-priority-example]");
+const arrowDirections = [
+  ["↑", "вверх"], ["→", "вправо"], ["↓", "вниз"], ["←", "влево"]
+];
 
-  function draw(focusIndex = null, control = "up") {
-    list.innerHTML = tasks.map((task, index) => `<li class="priority-row" data-priority-row="${index}">
-      <span class="priority-handle" data-priority-handle aria-hidden="true">⠿</span><span class="priority-text">${escapeHtml(task)}</span>
-      <span class="priority-actions">
-        <button type="button" data-priority-control="up" aria-label="Выше · ${escapeHtml(task)}" ${index === 0 ? "disabled" : ""}>Выше</button>
-        <button type="button" data-priority-control="down" aria-label="Ниже · ${escapeHtml(task)}" ${index === tasks.length - 1 ? "disabled" : ""}>Ниже</button>
-        <button type="button" data-priority-control="remove" aria-label="Убрать · ${escapeHtml(task)}">Убрать</button>
-      </span>
-    </li>`).join("");
-    example.hidden = tasks.length > 0;
-    input.disabled = tasks.length >= 6;
-    form.querySelector('button[type="submit"]').disabled = input.disabled;
-    next.textContent = tasks.length ? "Начните с задачи «" + tasks[0] + "»." : "";
-    next.hidden = !tasks.length;
-    if (focusIndex === null) return;
-    const row = list.children[focusIndex];
-    (row?.querySelector('[data-priority-control="' + control + '"]:enabled')
-      ?? row?.querySelector("[data-priority-control]:enabled")
-      ?? input).focus();
+function runAttention(body, signal) {
+  const rounds = 5;
+  let round = 0;
+  let firstTry = 0;
+  let oddIndex = -1;
+  let misses = 0;
+  body.innerHTML = `<p>В каждой сетке одна стрелка смотрит в другую сторону. Найдите её.</p>
+    <p class="game-progress attention-progress"></p>
+    <div class="attention-grid" role="group" aria-label="Клетки со стрелками"></div>
+    <p class="game-status attention-status" role="status" tabindex="-1"></p>
+    <button class="button dark" data-attention-next type="button" hidden>Следующий раунд</button>`;
+  const grid = body.querySelector(".attention-grid");
+  const progress = body.querySelector(".attention-progress");
+  const status = body.querySelector(".attention-status");
+  const next = body.querySelector("[data-attention-next]");
+
+  function draw() {
+    const common = Math.floor(Math.random() * arrowDirections.length);
+    const different = (common + 1 + Math.floor(Math.random() * 3)) % arrowDirections.length;
+    const lastIndex = oddIndex;
+    oddIndex = Math.floor(Math.random() * 16);
+    if (oddIndex === lastIndex) oddIndex = (oddIndex + 1) % 16;
+    misses = 0;
+    progress.textContent = `Раунд ${round + 1} из ${rounds}`;
+    status.textContent = "Выберите одну стрелку.";
+    next.hidden = true;
+    grid.innerHTML = Array.from({ length: 16 }, (_, index) => {
+      const [symbol, name] = arrowDirections[index === oddIndex ? different : common];
+      return `<button type="button" data-arrow="${index}" aria-label="Клетка ${index + 1} · стрелка ${name}">${symbol}</button>`;
+    }).join("");
   }
 
-  function move(from, to) {
-    if (from === to || to < 0 || to >= tasks.length) return;
-    const [task] = tasks.splice(from, 1);
-    tasks.splice(to, 0, task);
-  }
-
-  form.addEventListener("submit", event => {
-    event.preventDefault();
-    const task = input.value.trim();
-    if (!task || tasks.length >= 6) return;
-    tasks.push(task);
-    input.value = "";
+  grid.addEventListener("click", event => {
+    const found = event.target.closest("[data-arrow]");
+    if (!found) return;
+    if (Number(found.dataset.arrow) !== oddIndex) {
+      misses += 1;
+      found.disabled = true;
+      found.classList.add("is-missed");
+      status.textContent = misses === 1 ? "Эта стрелка совпадает с большинством. Попробуйте ещё." : "Ищите стрелку с другим направлением.";
+      (found.nextElementSibling?.matches(":enabled") ? found.nextElementSibling : grid.querySelector("button:enabled")).focus();
+      return;
+    }
+    if (!misses) firstTry += 1;
+    for (const button of grid.children) button.disabled = true;
+    found.classList.add("is-matched");
+    const complete = round + 1 === rounds;
+    status.textContent = complete
+      ? `Игра завершена. С первой попытки найдено ${firstTry} из ${rounds} стрелок.`
+      : "Верно! Эта стрелка отличается.";
+    next.textContent = complete ? "Сыграть снова" : "Следующий раунд";
+    next.hidden = false;
+    next.focus();
+  }, { signal });
+  next.addEventListener("click", () => {
+    round += 1;
+    if (round === rounds) {
+      round = 0;
+      firstTry = 0;
+    }
     draw();
-    if (input.disabled) list.lastElementChild.querySelector("button:enabled").focus();
-    else input.focus();
+    grid.querySelector("button").focus();
   }, { signal });
-  example.addEventListener("click", () => {
-    tasks.push("Ответить на письмо", "Подготовить первый слайд", "Выбрать время для прогулки");
-    draw(0, "down");
-  }, { signal });
-  list.addEventListener("click", event => {
-    const button = event.target.closest("[data-priority-control]");
-    if (!button) return;
-    const index = Number(button.closest(".priority-row").dataset.priorityRow);
-    const control = button.dataset.priorityControl;
-    if (control === "remove") {
-      tasks.splice(index, 1);
-      draw(Math.min(index, tasks.length - 1), "remove");
-    } else {
-      const target = index + (control === "up" ? -1 : 1);
-      move(index, target);
-      draw(target, control);
+  draw();
+}
+
+const thinkingPuzzles = [
+  { series: ["2", "4", "8", "16"], options: ["24", "32", "30"], answer: "32", rule: "Каждое число вдвое больше предыдущего." },
+  { series: ["1", "4", "9", "16"], options: ["20", "24", "25"], answer: "25", rule: "Это квадраты чисел от 1 до 5. Следующее число — 5 × 5." },
+  { series: ["10", "8", "11", "9", "12"], options: ["13", "10", "9"], answer: "10", rule: "Шаги чередуются. Сначала вычитаем 2, затем прибавляем 3." },
+  { series: ["3", "5", "8", "12"], options: ["17", "18", "16"], answer: "17", rule: "Прибавляется 2, затем 3, затем 4. Следующий шаг — прибавить 5." },
+  { series: ["1", "1", "2", "3", "5"], options: ["7", "8", "10"], answer: "8", rule: "Каждое следующее число равно сумме двух предыдущих." },
+  { series: ["2", "5", "11", "23"], options: ["46", "35", "47"], answer: "47", rule: "Удваиваем предыдущее число и прибавляем 1." }
+];
+
+function runThinking(body, signal) {
+  const rounds = 3;
+  let order = randomOrder(rounds, thinkingPuzzles.length);
+  let step = 0;
+  let correct = 0;
+
+  function draw(focus = false) {
+    const puzzle = thinkingPuzzles[order[step]];
+    if (!puzzle) {
+      body.innerHTML = `<h3 class="game-result" tabindex="-1">Результат игры</h3>
+        <p>Верных ответов: ${correct} из ${rounds}.</p>
+        <div class="actions"><button class="button dark" type="button" data-thinking-next>Сыграть снова</button></div>`;
+      body.querySelector(".game-result").focus();
+      return;
+    }
+    body.innerHTML = `<p>Какое число должно быть следующим?</p>
+      <p class="game-progress">Задача ${step + 1} из ${rounds}</p>
+      <ol class="pattern-series" aria-label="Числовой ряд">${puzzle.series.map(value => `<li>${value}</li>`).join("")}<li aria-label="Неизвестное число">?</li></ol>
+      <div class="pattern-options" role="group" aria-label="Варианты ответа">${puzzle.options.map(value =>
+        `<button type="button" data-pattern-answer="${value}">${value}</button>`).join("")}</div>
+      <p class="game-status thinking-status" role="status" tabindex="-1"></p>
+      <button class="button dark" type="button" data-thinking-next hidden>${step + 1 === rounds ? "Показать результат" : "Следующая задача"}</button>`;
+    if (focus) body.querySelector("[data-pattern-answer]").focus();
+  }
+
+  body.addEventListener("click", event => {
+    const answer = event.target.closest("[data-pattern-answer]");
+    const next = event.target.closest("[data-thinking-next]");
+    if (answer) {
+      const puzzle = thinkingPuzzles[order[step]];
+      const ok = answer.dataset.patternAnswer === puzzle.answer;
+      if (ok) correct += 1;
+      for (const button of body.querySelectorAll("[data-pattern-answer]")) {
+        button.disabled = true;
+        if (button.dataset.patternAnswer === puzzle.answer) button.classList.add("is-matched");
+      }
+      if (!ok) answer.classList.add("is-missed");
+      const status = body.querySelector(".thinking-status");
+      status.textContent = `${ok ? "Верно. " : "Ответ — " + puzzle.answer + ". "}${puzzle.rule}`;
+      body.querySelector("[data-thinking-next]").hidden = false;
+      status.focus();
+    } else if (next) {
+      if (step === rounds) {
+        order = randomOrder(rounds, thinkingPuzzles.length);
+        step = 0;
+        correct = 0;
+      } else step += 1;
+      draw(true);
     }
   }, { signal });
-
-  list.addEventListener("pointerdown", event => {
-    const handle = event.target.closest("[data-priority-handle]");
-    if (!handle || event.button !== 0) return;
-    const row = handle.closest(".priority-row");
-    const index = Number(row.dataset.priorityRow);
-    drag = { pointer: event.pointerId, from: index, to: index };
-    row.classList.add("is-moving");
-    handle.setPointerCapture(event.pointerId);
-  }, { signal });
-  list.addEventListener("pointermove", event => {
-    if (drag?.pointer !== event.pointerId) return;
-    const row = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-priority-row]");
-    if (!row || !list.contains(row)) return;
-    list.children[drag.to]?.classList.remove("drop-target");
-    drag.to = Number(row.dataset.priorityRow);
-    if (drag.to !== drag.from) row.classList.add("drop-target");
-  }, { signal });
-  function finishDrag(event) {
-    if (drag?.pointer !== event.pointerId) return;
-    const { from, to } = drag;
-    drag = null;
-    if (event.type === "pointerup") move(from, to);
-    draw();
-  }
-  list.addEventListener("pointerup", finishDrag, { signal });
-  list.addEventListener("pointercancel", finishDrag, { signal });
-  list.addEventListener("lostpointercapture", finishDrag, { signal });
   draw();
 }
 
@@ -399,7 +368,6 @@ function home() {
       <div class="facts"><div><strong>2024</strong><span>Год основания</span></div><div><strong>Москва</strong><span>Место регистрации</span></div><div><strong>НКО</strong><span>Профессиональное объединение</span></div></div>
     </div>
   </section>
-  ${practiceSection()}
   <section class="section tinted" id="projects"><div class="wrap">
     <div class="section-head"><h2>Направления деятельности</h2></div>
     <div class="directions">${directions.map(([title, body]) => `<article><h3>${title}</h3><p>${body}</p></article>`).join("")}</div>
@@ -421,7 +389,8 @@ function home() {
     <details><summary>Устав и реквизиты</summary><p>Ассоциация специалистов психологов и психотерапевтов «Центр Прогрессивных Психотехнологий Развития». Москва · ОГРН 1247700018906. Копия устава появится в рабочей версии.</p></details>
     <details><summary>Членство и профессиональная этика</summary><p>Место для положения о членстве и этического кодекса после утверждения документов.</p></details></div>
     <div id="contacts"><h3>Контакты ассоциации</h3><p class="intro">Москва. Официальные каналы связи будут добавлены в рабочей версии сайта.</p></div>
-  </div></section>`;
+  </div></section>
+  ${practiceSection()}`;
 }
 
 let catalogLocation = pageUrl("/specialists");
@@ -637,7 +606,7 @@ function render(moveFocus = true) {
 }
 
 const messages = {
-  privacy: ["Конфиденциальность", "Ответы и задачи из практикума остаются в открытом окне. Фильтры каталога работают в браузере."],
+  privacy: ["Конфиденциальность", "Игры и фильтры работают в браузере. Результаты игр хранятся только до закрытия окна."],
   join: ["Вступление в АСПП", "В рабочей версии здесь появятся условия членства, список документов и способ подачи заявки."],
   booking: ["Запись на консультацию", "В рабочей версии здесь будет способ согласовать время со специалистом. Демонстрационная запись не отправляется."],
   course: ["Покупка курса", "Это демонстрационный курс. Оплата и выдача доступа не подключены."],

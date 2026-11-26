@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Профессиональное сообщество психологов и психотерапевтов. Демонстрационный прототип сайта.">
 <title>АСПП — Ассоциация психологов и психотерапевтов</title>
-<link rel="stylesheet" href="/aspp-prototype/style.css?v=195d96aeb143">
+<link rel="stylesheet" href="/aspp-prototype/style.css?v=ae3063aed993">
 <script defer src="/aspp-prototype/materials.js?v=4583c6ac2546"></script>
-<script defer src="/aspp-prototype/app.js?v=abb0613344dc"></script>
+<script defer src="/aspp-prototype/app.js?v=5928e42372c9"></script>
 <link rel="canonical" href="https://mrkmsc.github.io/aspp-prototype/">
 </head>
 <body>
@@ -40,19 +40,6 @@
       <div class="facts"><div><strong>2024</strong><span>Год основания</span></div><div><strong>Москва</strong><span>Место регистрации</span></div><div><strong>НКО</strong><span>Профессиональное объединение</span></div></div>
     </div>
   </section>
-  <section class="section practice-section" id="practice" aria-labelledby="practice-title"><div class="wrap practice-layout">
-    <div class="practice-intro"><h2 id="practice-title">Практикум</h2><p>Короткие игры и упражнения, чтобы переключиться, заметить своё состояние и выбрать следующий шаг.</p></div>
-    <div class="practice-options"><button class="practice-option" type="button" data-practice="check-in">
-      <span class="practice-option-copy"><span class="practice-kind">Самопроверка</span><strong>Как я сейчас?</strong><span class="practice-description">Пять вопросов про энергию, напряжение и внимание. Итог подскажет, чему дать место сегодня.</span></span>
-      <span class="practice-duration">1 мин</span>
-    </button><button class="practice-option" type="button" data-practice="memory">
-      <span class="practice-option-copy"><span class="practice-kind">Игра</span><strong>Запомните порядок</strong><span class="practice-description">Посмотрите, как загораются клетки, и нажмите на них в той же последовательности.</span></span>
-      <span class="practice-duration">1–2 мин</span>
-    </button><button class="practice-option" type="button" data-practice="priorities">
-      <span class="practice-option-copy"><span class="practice-kind">Инструмент</span><strong>С чего начать?</strong><span class="practice-description">Соберите свои задачи и перетащите самую важную наверх.</span></span>
-      <span class="practice-duration">2 мин</span>
-    </button></div>
-  </div></section>
   <section class="section tinted" id="projects"><div class="wrap">
     <div class="section-head"><h2>Направления деятельности</h2></div>
     <div class="directions"><article><h3>Образование</h3><p>Повышение квалификации, семинары и обмен практическим опытом.</p></article><article><h3>Профессиональное сообщество</h3><p>Встречи, интервизии и сотрудничество специалистов.</p></article><article><h3>Исследования</h3><p>Изучение и обсуждение современных методов психологической работы.</p></article><article><h3>Социальные проекты</h3><p>Психологическое просвещение и инициативы для разных групп населения.</p></article><article><h3>Корпоративная психология</h3><p>Сотрудничество с организациями в области благополучия сотрудников.</p></article><article><h3>Публикации и медиа</h3><p>Профессиональные материалы, открытые лекции и дискуссии.</p></article></div>
@@ -98,7 +85,25 @@
     <details><summary>Устав и реквизиты</summary><p>Ассоциация специалистов психологов и психотерапевтов «Центр Прогрессивных Психотехнологий Развития». Москва · ОГРН 1247700018906. Копия устава появится в рабочей версии.</p></details>
     <details><summary>Членство и профессиональная этика</summary><p>Место для положения о членстве и этического кодекса после утверждения документов.</p></details></div>
     <div id="contacts"><h3>Контакты ассоциации</h3><p class="intro">Москва. Официальные каналы связи будут добавлены в рабочей версии сайта.</p></div>
-  </div></section></main>
+  </div></section>
+  <section class="section practice-section" id="practice" aria-labelledby="practice-title">
+    <div class="wrap">
+      <div class="practice-intro"><h2 id="practice-title">Практикум</h2><p>Три короткие игры на память, внимание и мышление.</p></div>
+      <div class="practice-options"><button class="practice-option" type="button" data-practice="memory" aria-label="Память · Запомните порядок">
+        <span class="practice-icon practice-icon--memory" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="practice-kind">Память</span>
+        <strong>Запомните порядок</strong><span class="practice-description">Повторите последовательность подсвеченных клеток.</span>
+      </button><button class="practice-option" type="button" data-practice="attention" aria-label="Внимание · Найдите лишнюю">
+        <span class="practice-icon practice-icon--attention" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="practice-kind">Внимание</span>
+        <strong>Найдите лишнюю</strong><span class="practice-description">Найдите стрелку, которая смотрит в другую сторону.</span>
+      </button><button class="practice-option" type="button" data-practice="thinking" aria-label="Мышление · Поймайте закономерность">
+        <span class="practice-icon practice-icon--thinking" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="practice-kind">Мышление</span>
+        <strong>Поймайте закономерность</strong><span class="practice-description">Разгадайте правило и выберите, что будет дальше.</span>
+      </button></div>
+    </div>
+  </section></main>
 <footer class="foot">
   <div class="wrap footer-grid">
     <a class="brand" href="/aspp-prototype/"><i class="mark" aria-hidden="true"></i><strong>АСПП</strong><span>Ассоциация психологов<br>и психотерапевтов</span></a>
